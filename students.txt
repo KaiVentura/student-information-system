@@ -5,3 +5,4 @@ Student List
 3. Pedro Reyes
 4. Ana Garcia
 5. Carlo Mendoza
+6. Charm Dela Paz
