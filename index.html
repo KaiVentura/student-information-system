@@ -609,7 +609,7 @@
           </div>
         </div>
         <div class="form-actions">
-          <span class="hint">Records are saved locally in this browser.</span>
+          <span class="hint">Records are saved to Google Sheets.</span>
           <button type="submit" class="btn-primary">+ Add Student</button>
         </div>
       </form>
@@ -648,14 +648,12 @@
   // ============================================================
   // Backend config
   // ------------------------------------------------------------
-  // API_URL now points to your Cloudflare Worker proxy, NOT the
-  // Apps Script /exec URL directly. The Worker holds the real
+  // API_URL points to your deployed Cloudflare Worker proxy, NOT
+  // the Apps Script /exec URL directly. The Worker holds the real
   // Apps Script URL and secret as encrypted environment variables
-  // (see worker.js) — nothing sensitive lives in this file anymore.
-  // Replace the placeholder below with your deployed Worker URL,
-  // e.g. https://sis-proxy.yoursubdomain.workers.dev
+  // — nothing sensitive lives in this file.
   // ============================================================
-  const API_URL = 'https://sis-proxy.YOUR-SUBDOMAIN.workers.dev';
+  const API_URL = 'https://sis-proxy.kaiventura.workers.dev';
 
   let students = []; // each item: { rowId, id, name, course, year }
 
