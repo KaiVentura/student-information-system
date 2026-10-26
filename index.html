@@ -213,6 +213,22 @@
   }
   .field label .req{color:var(--red);}
 
+  .field .error-msg{
+    font-size:11.5px;
+    color:var(--red);
+    font-weight:600;
+    min-height:14px;
+    display:none;
+  }
+  .field.has-error .error-msg{display:block;}
+  .field.has-error input{
+    border-color:var(--red);
+    background:var(--red-bg);
+  }
+  .field.has-error input:focus{
+    box-shadow:0 0 0 4px rgba(164,57,58,0.14);
+  }
+
   input, select{
     font-family:'Inter',sans-serif;
     font-size:14.5px;
@@ -374,6 +390,152 @@
     letter-spacing:0.02em;
   }
 
+  /* ===== Row remove animation ===== */
+  @keyframes rowRemove{
+    0%{ opacity:1; transform:translateX(0) scale(1); }
+    30%{ opacity:1; transform:translateX(6px) scale(1.01); background:var(--red-bg); }
+    100%{ opacity:0; transform:translateX(60px) scale(0.96); max-height:0; padding-top:0; padding-bottom:0; }
+  }
+  tr.row-removing td{
+    animation:rowRemove .45s cubic-bezier(.4,0,.2,1) forwards;
+    overflow:hidden;
+    display:table-cell;
+  }
+  tr.row-removing{
+    pointer-events:none;
+  }
+  @keyframes rowEnter{
+    from{ opacity:0; transform:translateY(-8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  tbody tr.row-enter{
+    animation:rowEnter .35s ease-out;
+  }
+
+  /* ===== Toast ===== */
+  #toastStack{
+    position:fixed;
+    top:24px;
+    right:24px;
+    z-index:1000;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-width:280px;
+    max-width:360px;
+    background:var(--navy-950);
+    color:#fff;
+    padding:14px 16px;
+    border-radius:9px;
+    box-shadow:var(--shadow-lg);
+    font-size:13.5px;
+    font-weight:500;
+    border-left:4px solid var(--gold);
+    transform:translateX(120%);
+    opacity:0;
+    animation:toastIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .toast.toast-success{border-left-color:var(--green);}
+  .toast.toast-danger{border-left-color:var(--red);}
+  .toast.toast-hide{
+    animation:toastOut .35s ease-in forwards;
+  }
+  .toast .toast-icon{
+    width:26px;height:26px;
+    flex-shrink:0;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    font-weight:700;
+  }
+  .toast-success .toast-icon{background:rgba(47,107,79,0.25); color:#7fd9a8;}
+  .toast-danger .toast-icon{background:rgba(164,57,58,0.25); color:#ff9b9c;}
+  .toast .toast-text strong{display:block; font-size:13.5px; margin-bottom:1px;}
+  .toast .toast-text span{display:block; font-size:12px; color:#aeb8c9; font-weight:400;}
+  @keyframes toastIn{
+    0%{ transform:translateX(120%); opacity:0; }
+    100%{ transform:translateX(0); opacity:1; }
+  }
+  @keyframes toastOut{
+    0%{ transform:translateX(0); opacity:1; }
+    100%{ transform:translateX(120%); opacity:0; }
+  }
+
+  /* ===== Confirm modal (replaces native confirm()) ===== */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(11,19,32,0.55);
+    backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1100;
+    opacity:0;
+    animation:overlayIn .2s ease forwards;
+  }
+  @keyframes overlayIn{ to{ opacity:1; } }
+  .modal-card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:28px 28px 22px;
+    width:100%;
+    max-width:360px;
+    box-shadow:var(--shadow-lg);
+    text-align:center;
+    transform:scale(.9) translateY(10px);
+    opacity:0;
+    animation:modalIn .3s cubic-bezier(.34,1.56,.64,1) .05s forwards;
+  }
+  @keyframes modalIn{
+    to{ transform:scale(1) translateY(0); opacity:1; }
+  }
+  .modal-card .modal-icon{
+    width:52px;height:52px;
+    margin:0 auto 14px;
+    border-radius:50%;
+    background:var(--red-bg);
+    color:var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;
+    font-weight:700;
+  }
+  .modal-card h3{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    color:var(--navy-900);
+    margin-bottom:6px;
+  }
+  .modal-card p{
+    font-size:13.5px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin-bottom:22px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:11px;
+    font-size:13.5px;
+  }
+  .btn-cancel{
+    background:var(--paper-dim);
+    color:var(--ink);
+  }
+  .btn-cancel:hover{background:var(--line);}
+  .btn-confirm{
+    background:linear-gradient(165deg, var(--red), #8c2f30);
+    color:#fff;
+  }
+  .btn-confirm:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
+
   @media (max-width:640px){
     body{padding:28px 14px 60px;}
     .masthead{padding:30px 24px;}
@@ -418,19 +580,22 @@
       <span class="sub">All fields are required</span>
     </div>
     <div class="panel-body">
-      <form id="studentForm">
+      <form id="studentForm" novalidate>
         <div class="field-grid">
-          <div class="field">
+          <div class="field" id="studentIdField">
             <label for="studentId">Student ID <span class="req">*</span></label>
             <input type="text" id="studentId" placeholder="e.g. 2024-001" required>
+            <span class="error-msg">Letters, numbers, spaces, and hyphens (-) only.</span>
           </div>
-          <div class="field">
+          <div class="field" id="fullNameField">
             <label for="fullName">Full Name <span class="req">*</span></label>
             <input type="text" id="fullName" placeholder="e.g. Dela Cruz, Juan M." required>
+            <span class="error-msg">Letters, spaces, periods (.), commas (,), apostrophes ('), and hyphens (-) only.</span>
           </div>
-          <div class="field">
+          <div class="field" id="courseField">
             <label for="course">Course <span class="req">*</span></label>
             <input type="text" id="course" placeholder="e.g. BSCS, BSIT" required>
+            <span class="error-msg">Letters, numbers, spaces, and hyphens (-) only.</span>
           </div>
           <div class="field">
             <label for="yearLevel">Year Level <span class="req">*</span></label>
@@ -477,6 +642,8 @@
   <footer>Student Information System &middot; Laboratory Project</footer>
 </div>
 
+<div id="toastStack"></div>
+
 <script>
   let students = JSON.parse(localStorage.getItem('students')) || [];
 
@@ -487,11 +654,97 @@
   const statCourses = document.getElementById('statCourses');
   const statYears = document.getElementById('statYears');
 
+  // Validation rules: no special characters like ()[]{}|\@#$%^&*_+=!`~<>?/.,
+  // (Full Name additionally allows . , ' - since those are normal in names)
+  const ID_COURSE_PATTERN = /^[A-Za-z0-9\s-]+$/;
+  const NAME_PATTERN = /^[A-Za-z\s.,'-]+$/;
+
+  const fieldConfigs = [
+    { input: document.getElementById('studentId'), wrap: document.getElementById('studentIdField'), pattern: ID_COURSE_PATTERN },
+    { input: document.getElementById('fullName'),  wrap: document.getElementById('fullNameField'),  pattern: NAME_PATTERN },
+    { input: document.getElementById('course'),    wrap: document.getElementById('courseField'),    pattern: ID_COURSE_PATTERN },
+  ];
+
+  function validateField(cfg){
+    const value = cfg.input.value.trim();
+    const isValid = value.length > 0 && cfg.pattern.test(value);
+    cfg.wrap.classList.toggle('has-error', !isValid && value.length > 0);
+    return isValid;
+  }
+
+  // Block disallowed characters as the user types
+  fieldConfigs.forEach(cfg => {
+    cfg.input.addEventListener('input', () => {
+      // Strip out any character not allowed by this field's pattern, live
+      const allowedChars = cfg.pattern === NAME_PATTERN
+        ? /[^A-Za-z\s.,'-]/g
+        : /[^A-Za-z0-9\s-]/g;
+      if(allowedChars.test(cfg.input.value)){
+        cfg.input.value = cfg.input.value.replace(allowedChars, '');
+      }
+      validateField(cfg);
+    });
+    cfg.input.addEventListener('blur', () => validateField(cfg));
+  });
+
+  // ===== Toast notifications =====
+  const toastStack = document.getElementById('toastStack');
+  function showToast(type, title, message){
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icon = type === 'success' ? '&#10003;' : '&#10005;';
+    toast.innerHTML = `
+      <div class="toast-icon">${icon}</div>
+      <div class="toast-text"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></div>
+    `;
+    toastStack.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('toast-hide');
+      toast.addEventListener('animationend', () => toast.remove(), { once:true });
+    }, 2800);
+  }
+
+  // ===== Custom confirm modal (replaces native confirm()) =====
+  function showConfirm(message){
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal-card">
+          <div class="modal-icon">&#10005;</div>
+          <h3>Remove Student?</h3>
+          <p>${escapeHtml(message)}</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel">Cancel</button>
+            <button type="button" class="btn-confirm">Remove</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const cleanup = (result) => {
+        overlay.style.animation = 'overlayIn .15s ease reverse forwards';
+        setTimeout(() => overlay.remove(), 150);
+        resolve(result);
+      };
+
+      overlay.querySelector('.btn-cancel').addEventListener('click', () => cleanup(false));
+      overlay.querySelector('.btn-confirm').addEventListener('click', () => cleanup(true));
+      overlay.addEventListener('click', (e) => { if(e.target === overlay) cleanup(false); });
+    });
+  }
+
   function initials(name){
     const parts = name.trim().split(/[\s,]+/).filter(Boolean);
     if(parts.length === 0) return '?';
     if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
     return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   function renderTable(){
@@ -509,12 +762,14 @@
     } else {
       students.forEach((student, index) => {
         const row = document.createElement('tr');
+        row.dataset.index = index;
+        if(student._isNew){ row.classList.add('row-enter'); delete student._isNew; }
         row.innerHTML = `
-          <td><span class="id-pill">${student.id}</span></td>
-          <td class="name-cell"><span class="avatar">${initials(student.name)}</span>${student.name}</td>
-          <td><span class="course-badge">${student.course}</span></td>
-          <td><span class="year-tag">${student.year}</span></td>
-          <td><button class="btn-delete" onclick="deleteStudent(${index})">&#10005; Remove</button></td>
+          <td><span class="id-pill">${escapeHtml(student.id)}</span></td>
+          <td class="name-cell"><span class="avatar">${escapeHtml(initials(student.name))}</span>${escapeHtml(student.name)}</td>
+          <td><span class="course-badge">${escapeHtml(student.course)}</span></td>
+          <td><span class="year-tag">${escapeHtml(student.year)}</span></td>
+          <td><button type="button" class="btn-delete" onclick="deleteStudent(${index})">&#10005; Remove</button></td>
         `;
         tableBody.appendChild(row);
       });
@@ -529,24 +784,51 @@
   studentForm.addEventListener('submit', function(e){
     e.preventDefault();
 
+    const allValid = fieldConfigs.map(validateField).every(Boolean);
+    if(!allValid){
+      const firstInvalid = fieldConfigs.find(cfg => cfg.wrap.classList.contains('has-error') || cfg.input.value.trim() === '');
+      if(firstInvalid) firstInvalid.input.focus();
+      return;
+    }
+
     const newStudent = {
-      id: document.getElementById('studentId').value,
-      name: document.getElementById('fullName').value,
-      course: document.getElementById('course').value.toUpperCase(),
-      year: document.getElementById('yearLevel').value
+      id: document.getElementById('studentId').value.trim(),
+      name: document.getElementById('fullName').value.trim(),
+      course: document.getElementById('course').value.trim().toUpperCase(),
+      year: document.getElementById('yearLevel').value,
+      _isNew: true
     };
 
     students.push(newStudent);
     saveData();
     renderTable();
     studentForm.reset();
+    fieldConfigs.forEach(cfg => cfg.wrap.classList.remove('has-error'));
+
+    showToast('success', 'Student Added', `${newStudent.name} was registered successfully.`);
   });
 
-  function deleteStudent(index){
-    if(confirm('Are you sure you want to remove this student record?')){
+  async function deleteStudent(index){
+    const student = students[index];
+    if(!student) return;
+
+    const confirmed = await showConfirm(`This will permanently remove ${student.name} from the roster.`);
+    if(!confirmed) return;
+
+    const row = tableBody.querySelector(`tr[data-index="${index}"]`);
+    if(row){
+      row.classList.add('row-removing');
+      row.addEventListener('animationend', () => {
+        students.splice(index, 1);
+        saveData();
+        renderTable();
+        showToast('danger', 'Student Removed', `${student.name} has been deleted from the roster.`);
+      }, { once:true });
+    } else {
       students.splice(index, 1);
       saveData();
       renderTable();
+      showToast('danger', 'Student Removed', `${student.name} has been deleted from the roster.`);
     }
   }
 
