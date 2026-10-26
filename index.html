@@ -645,7 +645,19 @@
 <div id="toastStack"></div>
 
 <script>
-  let students = JSON.parse(localStorage.getItem('students')) || [];
+  // ============================================================
+  // Backend config
+  // ------------------------------------------------------------
+  // API_URL now points to your Cloudflare Worker proxy, NOT the
+  // Apps Script /exec URL directly. The Worker holds the real
+  // Apps Script URL and secret as encrypted environment variables
+  // (see worker.js) — nothing sensitive lives in this file anymore.
+  // Replace the placeholder below with your deployed Worker URL,
+  // e.g. https://sis-proxy.yoursubdomain.workers.dev
+  // ============================================================
+  const API_URL = 'https://sis-proxy.YOUR-SUBDOMAIN.workers.dev';
+
+  let students = []; // each item: { rowId, id, name, course, year }
 
   const studentForm = document.getElementById('studentForm');
   const tableBody = document.getElementById('studentTableBody');
@@ -760,16 +772,16 @@
           </div>
         </td></tr>`;
     } else {
-      students.forEach((student, index) => {
+      students.forEach((student) => {
         const row = document.createElement('tr');
-        row.dataset.index = index;
+        row.dataset.rowId = student.rowId;
         if(student._isNew){ row.classList.add('row-enter'); delete student._isNew; }
         row.innerHTML = `
           <td><span class="id-pill">${escapeHtml(student.id)}</span></td>
           <td class="name-cell"><span class="avatar">${escapeHtml(initials(student.name))}</span>${escapeHtml(student.name)}</td>
           <td><span class="course-badge">${escapeHtml(student.course)}</span></td>
           <td><span class="year-tag">${escapeHtml(student.year)}</span></td>
-          <td><button type="button" class="btn-delete" onclick="deleteStudent(${index})">&#10005; Remove</button></td>
+          <td><button type="button" class="btn-delete" onclick="deleteStudent(${student.rowId})">&#10005; Remove</button></td>
         `;
         tableBody.appendChild(row);
       });
@@ -781,7 +793,40 @@
     statYears.textContent = new Set(students.map(s => s.year)).size;
   }
 
-  studentForm.addEventListener('submit', function(e){
+  function showLoadingState(){
+    tableBody.innerHTML = `
+      <tr><td colspan="5">
+        <div class="empty-state">
+          <div class="glyph">&#8987;</div>
+          <span>Loading roster&hellip;</span>
+          <p>Fetching records from Google Sheets.</p>
+        </div>
+      </td></tr>`;
+  }
+
+  // ===== Load students from Google Sheets =====
+  async function loadStudents(){
+    showLoadingState();
+    try{
+      const res = await fetch(`${API_URL}?action=list`);
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || 'Failed to load students.');
+      students = data.students;
+      renderTable();
+    } catch(err){
+      tableBody.innerHTML = `
+        <tr><td colspan="5">
+          <div class="empty-state">
+            <div class="glyph">&#9888;</div>
+            <span>Couldn't load the roster</span>
+            <p>${escapeHtml(err.message)}</p>
+          </div>
+        </td></tr>`;
+      showToast('danger', 'Load Failed', err.message);
+    }
+  }
+
+  studentForm.addEventListener('submit', async function(e){
     e.preventDefault();
 
     const allValid = fieldConfigs.map(validateField).every(Boolean);
@@ -791,52 +836,78 @@
       return;
     }
 
-    const newStudent = {
+    const payload = {
+      action: 'add',
       id: document.getElementById('studentId').value.trim(),
       name: document.getElementById('fullName').value.trim(),
       course: document.getElementById('course').value.trim().toUpperCase(),
-      year: document.getElementById('yearLevel').value,
-      _isNew: true
+      year: document.getElementById('yearLevel').value
     };
 
-    students.push(newStudent);
-    saveData();
-    renderTable();
-    studentForm.reset();
-    fieldConfigs.forEach(cfg => cfg.wrap.classList.remove('has-error'));
+    const submitBtn = studentForm.querySelector('.btn-primary');
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
 
-    showToast('success', 'Student Added', `${newStudent.name} was registered successfully.`);
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || 'Failed to add student.');
+
+      const newStudent = { ...data.student, _isNew: true };
+      students.push(newStudent);
+      renderTable();
+      studentForm.reset();
+      fieldConfigs.forEach(cfg => cfg.wrap.classList.remove('has-error'));
+
+      showToast('success', 'Student Added', `${newStudent.name} was registered successfully.`);
+    } catch(err){
+      showToast('danger', 'Add Failed', err.message);
+    } finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalLabel;
+    }
   });
 
-  async function deleteStudent(index){
-    const student = students[index];
+  async function deleteStudent(rowId){
+    const student = students.find(s => s.rowId === rowId);
     if(!student) return;
 
     const confirmed = await showConfirm(`This will permanently remove ${student.name} from the roster.`);
     if(!confirmed) return;
 
-    const row = tableBody.querySelector(`tr[data-index="${index}"]`);
-    if(row){
-      row.classList.add('row-removing');
-      row.addEventListener('animationend', () => {
-        students.splice(index, 1);
-        saveData();
+    const row = tableBody.querySelector(`tr[data-row-id="${rowId}"]`);
+    if(row) row.classList.add('row-removing');
+
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'delete', rowId: rowId })
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || 'Failed to delete student.');
+
+      const finish = () => {
+        students = students.filter(s => s.rowId !== rowId);
         renderTable();
         showToast('danger', 'Student Removed', `${student.name} has been deleted from the roster.`);
-      }, { once:true });
-    } else {
-      students.splice(index, 1);
-      saveData();
-      renderTable();
-      showToast('danger', 'Student Removed', `${student.name} has been deleted from the roster.`);
+      };
+
+      if(row){
+        row.addEventListener('animationend', finish, { once:true });
+      } else {
+        finish();
+      }
+    } catch(err){
+      if(row) row.classList.remove('row-removing');
+      showToast('danger', 'Delete Failed', err.message);
     }
   }
 
-  function saveData(){
-    localStorage.setItem('students', JSON.stringify(students));
-  }
-
-  renderTable();
+  loadStudents();
 </script>
 
 </body>
